@@ -1,0 +1,113 @@
+---
+title: "New Jersey Housing Price Analysis(2019-Present)"
+output: html_document
+---
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+#### Malarvizhi Shanmuga Pandian
+
+## Data Source
+
+https://www.redfin.com/news/data-center/
+
+https://www.realtor.com/research/data/
+
+## Introduction
+
+One of the greatest and longest post-pandemic effect is housing market in USA. During pandemic since most of the employees started work from home and this made them move away from cities to the sub-urban. As most families are mandated to spend the entire day inside the house and more space to setup their workstations also. people also preferred to have outdoor space to spend leisure hours of the day, since travelling was completely banned. These are few of reasons majority of the people started buying single family homes or town home and wanted to vacate their apartments.
+
+In this article, the housing market variations are analysed using multiple factors like average sale-to-list amount, average number of houses sold, average number of hosues in inventory, and more.
+In order to dig deeper and find answers to the few common questions on hosuing market.
+
+## How is the buyer demand for houses listed in NJ?
+
+Buyer demand seems to stay high as the average sale-to-list amount is increased by many factors in December 2021 when compared to January 2019. Sale-to-list amount is the percentage of amount the house was sold out of the amount intially listed. Also from the graph below, the inventory is reducing, but the buyer demand is the same. So this makes the house gets sold for more amount than its listed in coming year 2022.
+
+The line graph shows the value in each month and the red line indicates that pattern in variations for better understanding.
+
+```{r Import_and_prep, echo=FALSE}
+library(ggplot2)
+library(readxl)
+library(plyr)
+library(ggforce)
+library(tidyr)
+library(treemapify)
+library(ggplotify)
+library(reshape2)
+library(maps)
+library(usmap)
+library(ggsci)
+
+#Read data from excel
+
+df <- read_excel("C:\\Users\\Admin\\OneDrive - stevens.edu\\Documents\\Grad Courses\\FA 550 Data Viz\\data.xlsx")
+```
+
+```{r plot1, echo=FALSE}
+dataColumns = c("Inventory YoY", "Days on Market YoY", "Average Sale To List YoY")
+df <- as.data.frame(df) #Converting to dataframe
+df$Month <- as.Date(df$Month)
+res_df <- pivot_longer(df, dataColumns, names_to = "Tag", values_to = "Amount")
+
+g <- ggplot(data=res_df, aes(x=Month, y=Amount, group=1)) + 
+  geom_line(color = "#00AFBB", size = 1) +
+  theme(axis.text.x = element_text(angle = 0), panel.background = element_rect(fill = "grey85")) +
+  scale_x_date(date_labels = "%B %Y") + 
+  stat_smooth(color = "#FC4E07",method = "loess") +
+  labs(title="Housing Market Analysis in NJ") +
+  facet_grid(Tag ~ ., scales = "free_y", space = "free_x", labeller=label_wrap_gen(width = 10, multi_line = TRUE))
+
+library(grid)
+gt = ggplot_gtable(ggplot_build(g))
+#gt$widths[4] = 4*gt$widths[4]
+plot(gt)
+
+```
+
+## Did sellers listed the house at the right time?
+
+Looks like the sellers were profited by the decision to list their houses at past few years. The median sales price keeps increasing due to many factors like covid and inflation. Also it is assumed that the prices will not drop as low as the price before 2019. Its also seen from the graph below, that number of listings increases around January of every year and decreses gardually throughtout till next year begining. A pattern is realised that listing in January will attract more buyers than other time of the year.
+
+Similar to previous graph, the bars in the graph represent the quantity of each factor whereas the line indicates the pattern in its variations
+```{r Plot2, echo=FALSE}
+dataColumns1 = c("Median Sale Price", "Homes Sold","New Listings")
+res_df1 <- pivot_longer(df, dataColumns1, names_to = "Tag", values_to = "Amount")
+
+ggplot(data=res_df1, aes(x=Month, y=Amount)) + 
+  geom_bar(color = "#00AFBB",stat='identity', fill = '#00AFBB') +
+  theme(axis.text.x = element_text(angle = 0), panel.background = element_rect(fill = "grey85")) +
+  scale_x_date(date_labels = "%B %Y") + 
+  stat_smooth(color = "#FC4E07",method = "loess") +
+  labs(title="Housing Market Analysis in NJ") +
+  facet_grid(Tag ~ ., scales = "free_y", space = "free_x", labeller=label_wrap_gen(width = 10, multi_line = TRUE))
+
+```
+
+## How does national hosuing market looks like?
+
+Housing market in United States is also very strong. A geographical color coded representation is depicted to understand how hot the hosuing market in the whole of united states. The map is plotted based on the average number of days a house was listed before it got sold. More the value of days-to-sale the less the buyer demand in the state. The value ranges between the highest of 120 days and lowest of 40. This average is for the year 2019 till present. The color orange shows the lowest demand states and color blue denotes the state with highest demand. So here California and washington are few states with highest buyer demand, whereas Vermont is one state with high days-to-sale for houses after listing.
+```{r Plot3, echo=FALSE}
+df2 <- read_excel("C:\\Users\\Admin\\OneDrive - stevens.edu\\Documents\\Grad Courses\\FA 550 Data Viz\\data.xlsx","Sheet3")
+cols <- c("State")
+res_df2 <- ddply(df2, cols, function(x) colMeans(x["Median Dom"]))
+colnames(res_df2)[1] <- "abbr"
+colnames(res_df2)[2] <- "Amount"
+res_df2 <- merge( res_df2, statepop,by="abbr")
+
+g <- plot_usmap(data=res_df2,values = "Amount", color = 'black') + 
+  scale_fill_continuous(low = "#00AFBB", high = "#FC4E07") + 
+  theme(legend.position = "right") +
+  theme(panel.background = element_rect(fill = "gray85"), panel.grid.major = element_blank(), legend.title = element_blank()) 
+  
+centroid_labels <- utils::read.csv(system.file("extdata", paste0("us_", "states", "_centroids.csv"), package = "usmap"), stringsAsFactors = FALSE)
+res_df2 <- merge( res_df2, centroid_labels[c("x","y","abbr")],by.x ="abbr")
+res_df2$Amount <- round(res_df2$Amount)
+
+g + geom_text(data = res_df2, aes(x = x, y = y, label = paste0(res_df2$abbr)), color = "black", size=3) +
+  labs(title="Average number of days a house listed on market based on state")
+```
+ 
+## Conclusion
+In general, the metrics denotes the housing market is still busy. Sellers gets more profits as there are many competition for the houses listed. Buyers are willing to buy houses more than the amount listed in market. As a whole the sales amount keeps increasing from 2019 and it is expected to be the same.
+
